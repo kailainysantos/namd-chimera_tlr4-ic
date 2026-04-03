@@ -1,0 +1,156 @@
+
+## 1. Sobre o Projeto
+
+**Título:** *High-performance, high-throughput computing and machine learning techniques to create a framework for biological data processing, visualization, and sharing.*
+
+O projeto tem como objetivo central criar um framework computacional que integra HPC (*High-Performance Computing*), HTC (*High-Throughput Computing*) e técnicas de aprendizado de máquina para processar, visualizar e compartilhar grandes conjuntos de dados biológicos. O projeto é de iniciação científica vinculado à proposta de mestrado do Prof. Fábio Andrijauskas, em colaboração com pesquisadores nacionais e internacionais.
+
+---
+
+## 2. Contexto Técnico
+
+### O que é a TLR4?
+A TLR4 (*Toll-Like Receptor 4*) é uma proteína do sistema imunológico humano responsável por detectar agentes patogênicos. A simulação de sua dinâmica molecular permite estudar como ela interage com outras moléculas, contribuindo para pesquisas em imunologia e desenvolvimento de medicamentos.
+
+### O que é Dinâmica Molecular?
+Dinâmica molecular é uma técnica computacional que simula o movimento de átomos e moléculas ao longo do tempo seguindo as leis da física clássica. No contexto deste projeto, o software **NAMD 3** é utilizado para simular o comportamento da proteína TLR4 em ambiente aquoso, a 310,15 K (37°C — temperatura corporal humana).
+
+### O que é o CENAPAD?
+O CENAPAD (Centro Nacional de Processamento de Alto Desempenho) é o supercomputador da UNICAMP disponibilizado para pesquisas acadêmicas. As simulações moleculares da TLR4 exigem recursos computacionais muito superiores aos de um computador pessoal, sendo o CENAPAD o ambiente de execução dos Steps 4 e 5 do workflow.
+
+---
+
+## 3. O Workflow Chimera_TLR4
+
+O workflow de simulação da proteína TLR4 é composto por cinco etapas sequenciais, preparadas com o software CHARMM-GUI e executadas com o NAMD no CENAPAD:
+
+```
+Step 1 — Leitura do PDB          → preparação da estrutura inicial da proteína
+Step 2 — Solvatação              → inserção da proteína em caixa d'água com íons
+Step 3 — PBC Setup               → configuração das condições de contorno periódicas
+Step 4 — Equilibração            → estabilização térmica do sistema (CPU, 72h)
+Step 5 — Produção                → simulação principal gerando dados científicos (GPU, 168h)
+```
+
+Os Steps 1 a 3 são preparatórios e executados localmente. Os Steps 4 e 5 são submetidos ao CENAPAD via SLURM.
+
+---
+
+## 4. Atividades Realizadas por Kailainy
+
+### 4.1 Formação teórica
+
+Durante as primeiras semanas do projeto, foi realizado estudo sistemático dos seguintes tópicos, com avaliações progressivas:
+
+- Estrutura e função de proteínas; formato 3D (PDB)
+- Dinâmica molecular: algoritmo de Verlet, timestep, campo de força CHARMM, termostato de Langevin
+- Docking molecular: analogia fechadura/chave, sítio ativo
+- Os três arquivos do NAMD: `.pdb`, `.psf`, `.conf`
+- Interpretação do `output.log` do NAMD
+- Relação entre dinâmica molecular e docking
+- HPC, CENAPAD e SLURM
+- Livro do Prof. Fábio: *Projeto em Ciência de Dados com Soluções para Processamento Paralelo e Distribuído de Dados* (2024)
+- Frenkel & Smit, Capítulo 4 — resumo lido e contextualizado
+
+**Resultados das avaliações:**
+- Avaliação inicial: 4/5 (80%)
+- Avaliação avançada: 4/5 (80%)
+- Provão final: 6/6 (100%)
+
+---
+
+### 4.2 Prática com NAMD
+
+Instalação do NAMD 3 no Windows e execução bem-sucedida da simulação tutorial da proteína **ubiquitina**:
+
+- Sistema: 6.682 átomos
+- Temperatura: 310 K
+- Passos executados: 2.600
+- Arquivo de saída: `output.log` gerado em `C:\Users\kaila\Downloads\namd-tutorial-files\`
+- Resultado: simulação concluída sem erros
+
+---
+
+### 4.3 Documentação do Step 3 — PBC Setup
+
+Produção da documentação completa do Step 3 do workflow Chimera_TLR4, publicada no repositório GitHub do projeto (`kailainysantos/namd-chimera_tlr4-ic`).
+
+**Versões produzidas:**
+- `STEP3_README.md` — versão em português
+- `STEP3_README_EN.md` — versão em inglês simples
+- `STEP3_README_FINAL.md` — versão final em inglês acadêmico narrativo
+
+**Conteúdo da documentação:**
+- Explicação do conceito de PBC (Condições de Contorno Periódicas)
+- Tabela descritiva de todos os arquivos do Step 3
+- Código `step3_pbcsetup.inp` comentado linha por linha
+- Fluxo de entrada e saída dos dados
+- Tabela de conceitos-chave
+
+---
+
+### 4.4 Documentação do SLURM
+
+Produção da documentação completa do sistema SLURM para submissão de jobs no CENAPAD, publicada no repositório GitHub (`kailainysantos/md-slurm`).
+
+**Conteúdo da documentação:**
+- Explicação conceitual do SLURM com analogia do restaurante/maître d'
+- Estrutura geral de um arquivo `.sh`
+- Script do Step 4 (equilibração — fila CPU `par48-i`) comentado linha por linha
+- Script do Step 5 (produção — fila GPU `gpu-i`, CUDA) comentado linha por linha
+- Tabela comparativa Step 4 vs. Step 5
+- Comandos essenciais do SLURM (`sbatch`, `squeue`, `scancel`, `sinfo`, `sacct`)
+- Tabela de códigos de status de jobs
+- Fluxo completo dos dados do computador local até o CENAPAD
+
+---
+
+### 4.5 Levantamento de otimizações para os scripts SLURM
+
+Com base em sugestão do colega Dennis, foi realizado levantamento de otimizações aplicáveis aos scripts de submissão do NAMD no CENAPAD, com embasamento em fontes científicas:
+
+| # | Otimização | Descrição | Fonte |
+|---|---|---|---|
+| 1 | `+setcpuaffinity` | Fixa cada thread em um núcleo de CPU dedicado, evitando migração de threads | NAMD 3.0 User's Guide (UIUC) |
+| 2 | `GPUresident on` | Mantém dados na GPU entre os passos de tempo, eliminando latência CPU-GPU por passo | NAMD Benchmarks (UIUC, 2024); NVIDIA Technical Blog; CSC Finland |
+| 3 | `$SLURM_CPUS_PER_TASK` | Substitui número fixo de cores por variável de ambiente do SLURM, evitando inconsistências | NIH Biowulf; TACC Documentation |
+
+**Ganhos documentados na literatura:**
+- O modo `GPUresident on` proporciona ganho de desempenho superior a 2x sobre o modo GPU-offload padrão (NAMD Benchmarks, UIUC, 2024)
+- Em plataformas com NVLink, o ganho chega a 7x (NVIDIA DGX)
+- O `+setcpuaffinity` é recomendado por múltiplos centros HPC nacionais (NIH, TACC, CSC)
+
+**Status:** otimizações identificadas e documentadas; aguardando abertura da conta no CENAPAD para testes práticos e comparação de tempos.
+
+---
+
+### 4.6 Organização do repositório compartilhado
+
+Upload e organização dos arquivos do grupo no repositório `kailainysantos/md-slurm`, incluindo os materiais do Dennis (pipeline de correlação em R, Step 1 em Jupyter Notebook e scripts Python auxiliares).
+
+---
+
+## 5. Pendências
+
+| Item | Status |
+|---|---|
+| Conta no CENAPAD | ⏳ Formulário enviado para `abrecontas@cenapad.unicamp.br`; aguardando aprovação |
+| Instalação do VMD | 📋 Pendente — para visualização da simulação da ubiquitina |
+| Documentação do Step 2 (solvatação) | 📋 Pendente |
+| Testes práticos das otimizações no CENAPAD | 📋 Aguarda abertura da conta |
+| Comparação de tempos Step 4: CPU vs. GPU (sugestão Dennis) | 📋 Aguarda abertura da conta |
+
+---
+
+## 6. Materiais de Referência Estudados
+
+- ANDRIJAUSKAS, F. *Projeto em Ciência de Dados com Soluções para Processamento Paralelo e Distribuído de Dados.* Londrina: Editora e Distribuidora Educacional S.A., 2024.
+- FRENKEL, D.; SMIT, B. *Understanding Molecular Simulation: From Algorithms to Applications.* Capítulo 4.
+- PHILLIPS, J. C. et al. Scalable molecular dynamics on CPU and GPU architectures with NAMD. *Journal of Chemical Physics*, 2020. (PMC7395834)
+- NAMD 3.0 User's Guide. Theoretical and Computational Biophysics Group, University of Illinois at Urbana-Champaign. Disponível em: https://www.ks.uiuc.edu/Research/namd/3.0/ug/
+- NAMD Performance Benchmarks. UIUC, 2024. Disponível em: https://www.ks.uiuc.edu/Research/namd/benchmarks/
+- NVIDIA Technical Blog. *Delivering up to 9X the Throughput with NAMD v3 and NVIDIA A100 GPU*, 2022.
+
+---
+
+*Relatório elaborado por Kailainy Santos Souza — Abril de 2026*
